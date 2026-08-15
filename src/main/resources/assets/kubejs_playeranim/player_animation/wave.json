@@ -1,0 +1,101 @@
+{
+    "name": "wave",
+    "author": "KubeJS PlayerAnim",
+    "description": "Simple right-arm wave animation",
+    "emote": {
+        "isLoop": "false",
+        "returnTick": 0,
+        "beginTick": 0,
+        "endTick": 30,
+        "stopTick": 40,
+        "degrees": false,
+        "moves": [
+            {
+                "tick": 0,
+                "easing": "EASEINOUTQUAD",
+                "turn": 0,
+                "rightArm": {
+                    "pitch": 0,
+                    "yaw": 0,
+                    "roll": 0,
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                }
+            },
+            {
+                "tick": 5,
+                "easing": "EASEINOUTQUAD",
+                "turn": 0,
+                "rightArm": {
+                    "pitch": -2.5,
+                    "yaw": 0,
+                    "roll": 0,
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                }
+            },
+            {
+                "tick": 10,
+                "easing": "EASEINOUTQUAD",
+                "turn": 0,
+                "rightArm": {
+                    "pitch": -2.5,
+                    "yaw": 0,
+                    "roll": 0.4
+                }
+            },
+            {
+                "tick": 15,
+                "easing": "EASEINOUTQUAD",
+                "turn": 0,
+                "rightArm": {
+                    "pitch": -2.5,
+                    "yaw": 0,
+                    "roll": -0.4
+                }
+            },
+            {
+                "tick": 20,
+                "easing": "EASEINOUTQUAD",
+                "turn": 0,
+                "rightArm": {
+                    "pitch": -2.5,
+                    "yaw": 0,
+                    "roll": 0.4
+                }
+            },
+            {
+                "tick": 25,
+                "easing": "EASEINOUTQUAD",
+                "turn": 0,
+                "rightArm": {
+                    "pitch": -2.5,
+                    "yaw": 0,
+                    "roll": -0.4
+                }
+            },
+            {
+                "tick": 30,
+                "easing": "EASEINOUTQUAD",
+                "turn": 0,
+                "rightArm": {
+                    "pitch": -2.5,
+                    "yaw": 0,
+                    "roll": 0
+                }
+            },
+            {
+                "tick": 40,
+                "easing": "EASEINOUTQUAD",
+                "turn": 0,
+                "rightArm": {
+                    "pitch": 0,
+                    "yaw": 0,
+                    "roll": 0
+                }
+            }
+        ]
+    }
+}
