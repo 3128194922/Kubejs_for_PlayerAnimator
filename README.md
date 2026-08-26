@@ -1,7 +1,7 @@
 # KubeJS Player Animator
 
 KubeJS 与 [playerAnimator](https://github.com/KosmX/minecraftPlayerAnimator) 之间的桥接模组。
-允许服务端 KubeJS 脚本通过 S2C 网络同步触发客户端玩家自定义动画,实现多人可见的动画播放。
+允许服务端 KubeJS 脚本通过 S2C 网络同步触发客户端玩家自定义动画,实现多人可见的动画播放。本mod由AI编写。
 
 ## 核心特性
 
