@@ -1,5 +1,6 @@
 package com.kubejs.playeranim.client;
 
+import com.kubejs.playeranim.KubeJSPlayerAnimConfig;
 import dev.kosmx.playerAnim.api.layered.IAnimation;
 import dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer;
 import dev.kosmx.playerAnim.api.layered.ModifierLayer;
@@ -42,7 +43,8 @@ public class ClientAnimHandler {
      * 对每个 AbstractClientPlayer 创建一个 ModifierLayer 并存入 playerAssociatedData
      */
     public static void registerAnimationLayer() {
-        PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory(LAYER_ID, 42, player -> {
+        // 优先级可配置, 默认 2000 (config/kubejs_playeranim-common.toml)
+        PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory(LAYER_ID, KubeJSPlayerAnimConfig.ANIMATION_PRIORITY.get(), player -> {
             // 对所有客户端玩家都创建动画层 (本地玩家 + 其他玩家)
             return new ModifierLayer<IAnimation>();
         });
