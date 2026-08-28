@@ -10,6 +10,7 @@ KubeJS 与 [playerAnimator](https://github.com/KosmX/minecraftPlayerAnimator) �
 - **事件拦截**:提供 `PlayerAnimEvents.play` 事件,允许脚本修改动画参数或取消播放
 - **淡入淡出**:支持自定义淡入帧数与缓动函数(LINEAR、EASEINOUTQUAD 等)
 - **任意玩家**:动画层对所有 `AbstractClientPlayer`(本地玩家 + 其他玩家)生效
+- **优先级可配置**:动画层注册优先级默认 `2000`,可通过配置文件调整
 
 ## 依赖
 
@@ -46,7 +47,8 @@ PlayAnimMessage (S2C) ──────────────▶ ClientAnimHa
 
 | 类 | 职责 |
 |----|------|
-| [KubeJSPlayerAnimMod](src/main/java/com/kubejs/playeranim/KubeJSPlayerAnimMod.java) | 主类,注册 SimpleChannel 与数据包 |
+| [KubeJSPlayerAnimMod](src/main/java/com/kubejs/playeranim/KubeJSPlayerAnimMod.java) | 主类,注册 SimpleChannel、数据包与配置 |
+| [KubeJSPlayerAnimConfig](src/main/java/com/kubejs/playeranim/KubeJSPlayerAnimConfig.java) | Forge 配置定义(animationPriority) |
 | [KubeJSPlayerAnimPlugin](src/main/java/com/kubejs/playeranim/KubeJSPlayerAnimPlugin.java) | KubeJS 插件,注册事件、绑定对象、客户端动画层 |
 | [PlayerAnimBinding](src/main/java/com/kubejs/playeranim/script/PlayerAnimBinding.java) | 暴露 `PlayerAnim` 全局对象到脚本 |
 | [PlayAnimMessage](src/main/java/com/kubejs/playeranim/net/PlayAnimMessage.java) | S2C 数据包(UUID / 动画ID / 淡入 / 缓动 / stop) |
@@ -165,6 +167,23 @@ PlayerEvents.interact(event => {
 }
 ```
 
+## 配置
+
+配置文件位于 `config/kubejs_playeranim-common.toml`,首次启动后自动生成:
+
+```toml
+[general]
+	#Animation layer registration priority (higher = higher priority)
+	#Range: 0 ~ 2147483647
+	animationPriority = 2000
+```
+
+| 配置项 | 默认值 | 说明 |
+|--------|--------|------|
+| `animationPriority` | `2000` | 动画层注册优先级,数值越大优先级越高。需要与其他动画模组(如 emotecraft)竞争动画层顺序时调整此项 |
+
+修改配置后需重启游戏生效(动画层在客户端初始化阶段注册一次,不支持热重载)。
+
 ## 缓动函数
 
 `ease` 参数接受以下枚举名(大小写不敏感):
@@ -184,7 +203,7 @@ PlayerEvents.interact(event => {
 ## 技术说明
 
 - **网络通道注册**:`SimpleChannel` 必须在 mod 加载阶段(mod 构造函数)注册,数据包在 `FMLCommonSetupEvent` 中通过 `enqueueWork` 注册,避免 "Registration of impl channels is locked" 错误。
-- **动画层注册**:通过 `PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory` 为每个 `AbstractClientPlayer` 创建 `ModifierLayer`,优先级 42。
+- **动画层注册**:通过 `PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory` 为每个 `AbstractClientPlayer` 创建 `ModifierLayer`,优先级由配置项 `animationPriority` 决定(默认 `2000`)。
 - **客户端隔离**:`PlayAnimMessage.handle` 通过 `FMLEnvironment.dist` 检查确保 playerAnimator 相关代码仅在客户端执行。
 - **事件取消**:使用 `EventResult.interruptFalse()` 判断脚本是否调用 `event.cancel()`,而非 `isCanceled()`(KubeJS 1.20.1 的 `EventJS` 无此方法)。
 
