@@ -73,6 +73,97 @@ PlayAnimMessage (S2C) ──────────────▶ ClientAnimHa
 
 为指定玩家停止当前动画(带淡出)。
 
+### 第一人称:`PlayerAnim.firstPerson()`
+
+playerAnimator **默认不会把动画渲染到第一人称**,`KeyframeAnimationPlayer` 的第一人称模式初始值是 `FirstPersonMode.NONE`,
+第一人称渲染通道会直接跳过该层。所以只调用 `PlayerAnim.play()` 时,第三人称能看到动画,自己视角看不到——这不是 bug。
+
+要用第一人称显示,必须显式指定 `FirstPersonMode.THIRD_PERSON_MODEL`:playerAnimator 会把相机临时当作第三人称,
+渲染玩家模型(默认只保留手臂和手持物),同时屏蔽原版第一人称手部渲染。
+
+```js
+const fp = PlayerAnim.firstPerson()
+fp.mode = "THIRD_PERSON_MODEL"   // 关键
+fp.rightArm = true               // 显示右臂
+fp.leftArm = false
+PlayerAnim.play(player, "wave", 10, "EASEINOUTQUAD", fp)
+```
+
+`FirstPersonOptions` 字段:
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `mode` | `string` | `THIRD_PERSON_MODEL`(推荐)、`VANILLA`、`NONE`、`DISABLED`、`AUTO` |
+| `rightArm` / `leftArm` | `boolean` | 是否显示该侧手臂(`THIRD_PERSON_MODEL` 下才有效) |
+| `rightItem` / `leftItem` | `boolean` | 是否显示该侧手持物,留空时跟随对应手臂 |
+
+所有字段都可留空,留空时按“动画 JSON 顶层字段 → 配置文件”的顺序回退。
+
+### 用动画 JSON 声明(无需改脚本)
+
+动画 JSON 顶层支持四个附加字段(playerAnimator 会把它们放进 `extraData`):
+
+```json
+{
+  "name": "wave",
+  "firstPersonMode": "THIRD_PERSON_MODEL",
+  "showRightArm": true,
+  "showLeftArm": false,
+  "emote": { "...": "..." }
+}
+```
+
+这样任何调用 `PlayerAnim.play(player, "wave")` 的地方都会自动带第一人称。
+
+### 持有物品时替换原版待机/移动动作
+
+`PlayerAnim.locomotion(id)` 注册一套"持有时接管原版动作"的配置:
+待机摆动、四方向走、疾跑、潜行、跳跃、下落都会换成你的动画。
+
+```js
+PlayerAnim.locomotion("gun")
+    .eitherHand("tacz:modern_kinetic_gun")   // 主手或副手
+    .priority(1000)                          // 数值越大越优先
+    .fadeTicks(4)                            // 切换淡入帧数
+    .firstPersonMode("THIRD_PERSON_MODEL")
+    .showRightArm(true)
+    .idle("kubejs_playeranim:gun_idle")
+    .walkForward("kubejs_playeranim:gun_walk_front")
+    .walkBackward("kubejs_playeranim:gun_walk_back")
+    .walkLeft("kubejs_playeranim:gun_walk_left")
+    .walkRight("kubejs_playeranim:gun_walk_right")
+    .run("kubejs_playeranim:gun_run")
+    .sneak("kubejs_playeranim:gun_idle")
+    .jump("kubejs_playeranim:gun_jump")
+    .fall("kubejs_playeranim:gun_fall")
+    .register()
+```
+
+**物品匹配**支持三种写法:`namespace:item`、`namespace:*`(整个命名空间)、`#namespace:tag`(标签)。
+也可用 `.mainHand(...)` / `.offHand(...)` / `.always(true)`。
+
+**状态回退规则**(没写的状态自动借用):
+
+| 状态 | 回退到 |
+|------|--------|
+| `walk_front` / `walk_back` / `walk_left` / `walk_right` | `walk` |
+| `run` | `walk` |
+| `jump` | `fall` |
+| `fall` | `jump` |
+| `sneak` / `swim` | `idle` |
+
+`run` 只在"真正向前 + 速度达到疾跑量级"时触发, 侧移和后退一律走 `walk_*`,
+与原版/MechanicianCombat 的判定一致。移动状态用位置差采样, 所以站着不动时
+不会因为走路动画还在循环而"原地踏步"。
+
+**动画必须循环**: 配置默认 `loop = true`, 会自动把一次性动画包成循环;
+若某段是一次性动作, 用 `.loop(false)`。
+
+### 与 `play()` 的关系
+
+替换层的注册优先级默认 `locomotionPriority = 1900`, 低于 `animationPriority = 2000`。
+所以 `PlayerAnim.play()` 播的攻击/翻滚等一次性动画仍然盖在上面, 播完自动回到待机替换动画。
+
 ### `PlayerAnimEvents.play(event => { ... })`
 
 每次调用 `PlayerAnim.play()` 时触发的服务端事件,可读取/修改参数或取消播放。
@@ -176,11 +267,26 @@ PlayerEvents.interact(event => {
 	#Animation layer registration priority (higher = higher priority)
 	#Range: 0 ~ 2147483647
 	animationPriority = 2000
+	[general.firstPerson]
+		#Default first person mode, default THIRD_PERSON_MODEL
+		defaultMode = "THIRD_PERSON_MODEL"
+		#If true, arm visibility is derived from the animation keyframes
+		autoArmVisibility = true
+	#Priority of the locomotion-replacement layer (vanilla idle/walk override).
+	#Keep it lower than animationPriority so one-shot animations still win.
+	#Range: 0 ~ 2147483647
+	locomotionPriority = 1900
 ```
 
 | 配置项 | 默认值 | 说明 |
 |--------|--------|------|
 | `animationPriority` | `2000` | 动画层注册优先级,数值越大优先级越高。需要与其他动画模组(如 emotecraft)竞争动画层顺序时调整此项 |
+| `firstPerson.defaultMode` | `THIRD_PERSON_MODEL` | 动画和脚本都没指定第一人称模式时的默认值;设为 `NONE` 可恢复“第一人称不显示”的旧行为 |
+| `firstPerson.autoArmVisibility` | `true` | 未指定手臂可见性时,按动画是否包含 `rightArm`/`leftArm` 关键帧自动决定 |
+| `locomotionPriority` | `1900` | 待机/移动替换层的优先级,必须低于 `animationPriority` |
+
+注意:`defaultMode` 是全局开关。想让“部分动画第一人称可见、部分不可见”,请保持默认值,改在动画 JSON 里写
+`"firstPersonMode": "NONE"` 或用脚本传 `fp.mode = "NONE"`。
 
 修改配置后需重启游戏生效(动画层在客户端初始化阶段注册一次,不支持热重载)。
 

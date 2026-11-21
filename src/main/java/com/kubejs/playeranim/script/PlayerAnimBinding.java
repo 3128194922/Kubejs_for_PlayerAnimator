@@ -3,6 +3,7 @@ package com.kubejs.playeranim.script;
 import com.kubejs.playeranim.KubeJSPlayerAnimMod;
 import com.kubejs.playeranim.event.PlayAnimEventJS;
 import com.kubejs.playeranim.event.PlayerAnimEvents;
+import com.kubejs.playeranim.locomotion.LocomotionProfile;
 import com.kubejs.playeranim.net.PlayAnimMessage;
 import dev.latvian.mods.kubejs.event.EventResult;
 import dev.latvian.mods.kubejs.typings.Info;
@@ -37,6 +38,16 @@ public class PlayerAnimBinding {
         play(player, animationId, fadeTicks, "LINEAR");
     }
 
+    @Info("创建第一人称选项对象, 用于 play() 的第 5 个参数")
+    public FirstPersonOptions firstPerson() {
+        return new FirstPersonOptions();
+    }
+
+    @Info("创建'持有时替换原版待机/移动动作'的配置, 需调用 .register() 生效")
+    public LocomotionProfile locomotion(String id) {
+        return new LocomotionProfile(id);
+    }
+
     /**
      * @param player      目标玩家
      * @param animationId 动画ID, 格式 "namespace:path", 对应 assets/namespace/player_animation/ 下的动画 name 字段
@@ -45,6 +56,14 @@ public class PlayerAnimBinding {
      */
     @Info("为指定玩家播放动画, 自定义淡入帧数和缓动函数")
     public void play(Player player, String animationId, int fadeTicks, String ease) {
+        play(player, animationId, fadeTicks, ease, null);
+    }
+
+    /**
+     * @param options 第一人称选项, 可为 null; 为 null 时使用动画 JSON 或配置文件中的设置
+     */
+    @Info("为指定玩家播放动画, 并指定第一人称显示方式")
+    public void play(Player player, String animationId, int fadeTicks, String ease, FirstPersonOptions options) {
         if (player == null || !(player instanceof ServerPlayer serverPlayer)) return;
 
         // 触发 server_scripts 事件, 允许脚本修改参数或取消
@@ -58,7 +77,12 @@ public class PlayerAnimBinding {
                 event.getAnimation(),
                 event.getFadeTicks(),
                 event.getEase(),
-                false
+                false,
+                options == null ? null : options.getMode(),
+                options == null ? null : options.getRightArm(),
+                options == null ? null : options.getLeftArm(),
+                options == null ? null : options.getRightItem(),
+                options == null ? null : options.getLeftItem()
         );
         KubeJSPlayerAnimMod.CHANNEL.send(
                 PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> serverPlayer),
